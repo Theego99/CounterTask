@@ -1,0 +1,38 @@
+name: counter
+description: A new Flutter project.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.5 <4.0.0'
+
+dependencies:
+  shared_preferences: ^2.0.12
+  flutter_timer_countdown: ^1.0.6
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.2
+  google_fonts: ^6.1.0
+  path_provider: ^2.1.1
+
+dev_dependencies:
+  sqflite: any
+  localstorage: ^4.0.0+1
+  flutter_test:
+    sdk: flutter
+  sqflite_common_ffi: ^2.0.0
+  flutter_lints: ^2.0.0
+
+flutter:
+
+  uses-material-design: true
+
+  # To add assets to your application, add an assets section, like this:
+  assets:
+    - 'assets/images/Blacklogonobackground.png'
+    - 'assets/images/Colorlogonobackground.png'
+    - 'assets/images/Colorlogowithbackground.png'
+    - 'assets/images/Whitelogonobackground.png'
+
