@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:counter/home_screen.dart';
+import 'package:counter/stats_screen.dart';
 import 'package:counter/bottommenu.dart';
 import 'package:counter/Settings/settings_screen.dart';
 import 'package:counter/counters/my_counters_screen.dart';
@@ -19,9 +19,11 @@ class _Screen extends State<Screen> {
   var activeScreen = 'home-screen';
 
   void switchScreen(String screen) {
-    setState(() {
-      activeScreen = screen;
-    });
+    setState(
+      () {
+        activeScreen = screen;
+      },
+    );
   }
 
   @override
@@ -32,7 +34,7 @@ class _Screen extends State<Screen> {
     );
     Widget appBar = BottomMenu(switchScreen);
     if (activeScreen == 'stats-screen') {
-      screenWidget = HomeScreen();
+      screenWidget = StatScreen();
     } else if (activeScreen == 'settings-screen') {
       screenWidget = const Settings();
     }

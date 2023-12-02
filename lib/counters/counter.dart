@@ -30,9 +30,11 @@ class _CounterWidgetState extends State<CounterWidget>
   Future<void> _loadTasks() async {
     var loadedTasks =
         await widget.dataModel.getTasksForCounter(widget.counter.id!);
-    setState(() {
-      tasks = loadedTasks;
-    });
+    setState(
+      () {
+        tasks = loadedTasks;
+      },
+    );
   }
 
   @override
@@ -157,7 +159,10 @@ class _CounterWidgetState extends State<CounterWidget>
                             spacing: 12, // space between two icons
                             children: <Widget>[
                               IconButton(
-                                icon: const Icon(Icons.add,size: 40,),
+                                icon: const Icon(
+                                  Icons.add,
+                                  size: 40,
+                                ),
                                 onPressed: () {
                                   _showAddTaskDialog(context);
                                 },

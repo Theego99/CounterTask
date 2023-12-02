@@ -20,13 +20,13 @@ class CountDown extends StatefulWidget {
 
 class _CountDownState extends State<CountDown> {
   late DateTime endTime;
+  Key _timerKey = UniqueKey();
 
   @override
   void initState() {
     super.initState();
     _calculateEndTime();
   }
-  Key _timerKey = UniqueKey();
 
   void _calculateEndTime() {
     endTime = widget.counter.nextResetDate;
@@ -36,6 +36,26 @@ class _CountDownState extends State<CountDown> {
     DateTime newResetDate = DateTime.now().add(widget.counter.resetTimePeriod);
     await widget.dataModel
         .updateNextResetTime(widget.counter.id!, newResetDate);
+
+    // Add historical data
+    var currentTasks =
+        await widget.dataModel.getTasksForCounter(widget.counter.id!);
+    List<TaskHistory> tasksHistory = currentTasks.map((task) {
+      return TaskHistory(
+        task.id!,
+        task.minimum,
+        task.goal,
+        task.count,
+      );
+    }).toList();
+    CounterHistory history = CounterHistory(
+      widget.counter.id!,
+      DateTime.now(),
+      tasksHistory,
+    );
+
+    // Store the history record in the database
+    await widget.dataModel.addCounterHistory(history);
 
     setState(() {
       endTime = newResetDate;
@@ -47,17 +67,20 @@ class _CountDownState extends State<CountDown> {
 
   @override
   Widget build(BuildContext context) {
-    return TimerCountdown(
-      format: CountDownTimerFormat.daysHoursMinutesSeconds,
-      daysDescription: '',
-      hoursDescription: '',
-      minutesDescription: '',
-      secondsDescription: '',
-      spacerWidth: 3,
-      timeTextStyle: const TextStyle(color: Colors.white, fontSize: 15),
-      colonsTextStyle: const TextStyle(color: Colors.white, fontSize: 15),
-      endTime: endTime,
-      onEnd: _resetCountdown,
+    return KeyedSubtree(
+      key: _timerKey,
+      child: TimerCountdown(
+        format: CountDownTimerFormat.daysHoursMinutesSeconds,
+        daysDescription: '',
+        hoursDescription: '',
+        minutesDescription: '',
+        secondsDescription: '',
+        spacerWidth: 3,
+        timeTextStyle: const TextStyle(color: Colors.white, fontSize: 15),
+        colonsTextStyle: const TextStyle(color: Colors.white, fontSize: 15),
+        endTime: endTime,
+        onEnd: _resetCountdown,
+      ),
     );
   }
 }

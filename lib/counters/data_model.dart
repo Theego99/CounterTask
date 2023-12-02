@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
@@ -73,6 +75,60 @@ class Task {
   }
 }
 
+class CounterHistory {
+  final int counterId;
+  final DateTime resetTime;
+  final List<TaskHistory> tasksHistory;
+
+  CounterHistory(this.counterId, this.resetTime, this.tasksHistory);
+
+  Map<String, dynamic> toMap() {
+    return {
+      'counter_id': counterId,
+      'reset_time': resetTime.toIso8601String(),
+      'tasks_history':
+          jsonEncode(tasksHistory.map((task) => task.toMap()).toList()),
+    };
+  }
+
+  static CounterHistory fromMap(Map<String, dynamic> map) {
+    return CounterHistory(
+      map['counter_id'],
+      DateTime.parse(map['reset_time']),
+      (jsonDecode(map['tasks_history']) as List)
+          .map((taskMap) => TaskHistory.fromMap(taskMap))
+          .toList(),
+    );
+  }
+}
+
+class TaskHistory {
+  final int taskId;
+  final int minimum;
+  final int goal;
+  final int count;
+
+  TaskHistory(this.taskId, this.minimum, this.goal, this.count);
+
+  Map<String, dynamic> toMap() {
+    return {
+      'task_id': taskId,
+      'minimum': minimum,
+      'goal': goal,
+      'count': count,
+    };
+  }
+
+  static TaskHistory fromMap(Map<String, dynamic> map) {
+    return TaskHistory(
+      map['task_id'],
+      map['minimum'],
+      map['goal'],
+      map['count'],
+    );
+  }
+}
+
 class CounterDataModel {
   Database? database;
 
@@ -81,9 +137,12 @@ class CounterDataModel {
       join(await getDatabasesPath(), 'counters.db'),
       onCreate: (db, version) {
         db.execute(
-            "CREATE TABLE counters(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, reset_time_period INTEGER, created_at TEXT, next_reset_date TEXT)"); // Updated table creation
+            "CREATE TABLE counters(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, reset_time_period INTEGER, created_at TEXT, next_reset_date TEXT)");
         db.execute(
             "CREATE TABLE tasks(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, minimum INTEGER, goal INTEGER, count INTEGER, counter_id INTEGER, FOREIGN KEY (counter_id) REFERENCES counters (id))");
+        db.execute(
+          "CREATE TABLE counter_history(id INTEGER PRIMARY KEY AUTOINCREMENT, counter_id INTEGER, reset_time TEXT, tasks_history TEXT, FOREIGN KEY (counter_id) REFERENCES counters (id))",
+        );
       },
       version: 1,
     );
@@ -189,5 +248,30 @@ class CounterDataModel {
       where: "id = ?",
       whereArgs: [counterId],
     );
+  }
+
+  Future<List<CounterHistory>> getCounterHistory(int counterId) async {
+    await initDB();
+    final List<Map<String, dynamic>> historyMaps = await database!.query(
+      'counter_history',
+      where: 'counter_id = ?',
+      whereArgs: [counterId],
+    );
+    return List.generate(
+      historyMaps.length,
+      (i) {
+        return CounterHistory.fromMap(historyMaps[i]);
+      },
+    );
+  }
+
+  Future<void> addCounterHistory(CounterHistory history) async {
+    await initDB();
+    if (database != null) {
+      await database!.insert('counter_history', history.toMap());
+    } else {
+      print("Database is not initialized.");
+      // Handle the error appropriately
+    }
   }
 }

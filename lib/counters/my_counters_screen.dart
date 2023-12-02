@@ -8,7 +8,9 @@ import 'package:counter/counters/proxy_decorator.dart';
 class MyCounters extends StatefulWidget {
   final CounterDataModel dataModel;
 
-  const MyCounters({Key? key, required this.dataModel}) : super(key: key);
+  const MyCounters(
+      {Key? key, required this.dataModel,})
+      : super(key: key);
 
   @override
   State<MyCounters> createState() => _MyCountersState();
@@ -33,6 +35,7 @@ class _MyCountersState extends State<MyCounters> {
 
   void refreshCounters() async {
     List<Counter> updatedCounters = await widget.dataModel.getCounters();
+    
     setState(() {
       counters = updatedCounters;
     });
@@ -114,14 +117,6 @@ class _MyCountersState extends State<MyCounters> {
                       color: Colors.white,
                       tooltip: 'Create New Counter',
                     ),
-                    // IconButton(
-                    //   onPressed: () {
-                    //     super.initState();
-                    //   },
-                    //   icon: const Icon(Icons.refresh),
-                    //   iconSize: 40,
-                    //   color: Colors.white,
-                    // ),
                     ReorderableListView(
                       // clipBehavior: Clip.hardEdge,
                       proxyDecorator: customProxyDecorator,
