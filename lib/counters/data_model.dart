@@ -134,7 +134,7 @@ class CounterDataModel {
 
   Future<void> initDB() async {
     database = await openDatabase(
-      join(await getDatabasesPath(), 'counters.db'),
+      join(await getDatabasesPath(), 'mycounters.db'),
       onCreate: (db, version) {
         db.execute(
             "CREATE TABLE counters(id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, reset_time_period INTEGER, created_at TEXT, next_reset_date TEXT)");

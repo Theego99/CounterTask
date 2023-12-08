@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:counter/counters/data_model.dart';
 import 'package:counter/counters/task.dart';
 import 'package:counter/counters/countdown.dart';
+import 'package:counter/counters/drop_down_menu.dart';
 
 class CounterWidget extends StatefulWidget {
   final Counter counter;
@@ -263,65 +264,153 @@ class _CounterWidgetState extends State<CounterWidget>
   }
 
   void _deleteCounter(BuildContext context) async {
-    await widget.dataModel.deleteCounter(widget.counter.id!);
-    widget.onDelete(); // This will call removeCounter from MyCounters
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("${widget.counter.name} deleted"),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+    // Show a confirmation dialog
+    bool confirm = await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Are you sure you want to delete counter?'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(context).pop(false), // User presses Cancel
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(context).pop(true), // User presses Yes
+                  child: Text('Yes'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false; // If the dialog is dismissed, it returns null. Convert it to false.
+
+    // If confirm is true, proceed with deletion
+    if (confirm) {
+      await widget.dataModel.deleteCounter(widget.counter.id!);
+      widget.onDelete(); // This will call removeCounter from MyCounters
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("${widget.counter.name} deleted"),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _showEditCounterDialog() {
     String updatedName = widget.counter.name;
-    Duration updatedResetTimePeriod = widget.counter.resetTimePeriod;
+    // Decompose the Duration into days, hours, minutes, and seconds
+    int initialDays = widget.counter.resetTimePeriod.inDays;
+    int initialHours = widget.counter.resetTimePeriod.inHours % 24;
+    int initialMinutes = widget.counter.resetTimePeriod.inMinutes % 60;
+    int initialSeconds = widget.counter.resetTimePeriod.inSeconds % 60;
 
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Edit Counter'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: const InputDecoration(labelText: 'Counter Name'),
-                controller: TextEditingController(text: widget.counter.name),
-                onChanged: (value) {
-                  updatedName = value;
-                },
+        // These need to be stateful values inside the dialog
+        int selectedDays = initialDays;
+        int selectedHours = initialHours;
+        int selectedMinutes = initialMinutes;
+        int selectedSeconds = initialSeconds;
+
+        return StatefulBuilder(
+          // Use StatefulBuilder to manage state inside the dialog
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('Edit Counter'),
+              content: SingleChildScrollView(
+                // Use SingleChildScrollView for better handling of small screens
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      decoration:
+                          const InputDecoration(labelText: 'Counter Name'),
+                      controller:
+                          TextEditingController(text: widget.counter.name),
+                      onChanged: (value) {
+                        updatedName = value;
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    DropdownMenuWidget(
+                      label: 'Days',
+                      initialValue: selectedDays,
+                      onSelected: (value) {
+                        setState(() {
+                          selectedDays = value as int;
+                        });
+                      },
+                      items:
+                          List.generate(32, (index) => index, growable: false),
+                    ),
+                    const SizedBox(height: 20),
+                    DropdownMenuWidget(
+                      label: 'Hours',
+                      initialValue: selectedHours,
+                      onSelected: (value) {
+                        setState(() {
+                          selectedHours = value as int;
+                        });
+                      },
+                      items:
+                          List.generate(24, (index) => index, growable: false),
+                    ),
+                    const SizedBox(height: 20),
+                    DropdownMenuWidget(
+                      label: 'Minutes',
+                      initialValue: selectedMinutes,
+                      onSelected: (value) {
+                        setState(() {
+                          selectedMinutes = value as int;
+                        });
+                      },
+                      items:
+                          List.generate(60, (index) => index, growable: false),
+                    ),
+                    const SizedBox(height: 20),
+                    DropdownMenuWidget(
+                      label: 'Seconds',
+                      initialValue: selectedSeconds,
+                      onSelected: (value) {
+                        setState(() {
+                          selectedSeconds = value as int;
+                        });
+                      },
+                      items:
+                          List.generate(60, (index) => index, growable: false),
+                    ),
+                  ],
+                ),
               ),
-              TextField(
-                decoration:
-                    const InputDecoration(labelText: 'Reset Time (in seconds)'),
-                controller: TextEditingController(
-                    text: widget.counter.resetTimePeriod.inSeconds.toString()),
-                keyboardType: TextInputType.number,
-                onChanged: (value) {
-                  updatedResetTimePeriod = Duration(
-                      seconds: int.tryParse(value) ??
-                          widget.counter.resetTimePeriod.inSeconds);
-                },
-              ),
-            ],
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Save'),
-              onPressed: () async {
-                _updateCounter(
-                    updatedName, updatedResetTimePeriod); // Correct call
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                TextButton(
+                  child: const Text('Save'),
+                  onPressed: () {
+                    // Reassemble the Duration from the selected values
+                    Duration updatedResetTimePeriod = Duration(
+                      days: selectedDays,
+                      hours: selectedHours,
+                      minutes: selectedMinutes,
+                      seconds: selectedSeconds,
+                    );
+                    _updateCounter(updatedName, updatedResetTimePeriod);
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
         );
       },
     );

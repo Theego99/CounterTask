@@ -12,37 +12,60 @@ class BottomMenu extends StatelessWidget {
       child: BottomAppBar(
         color: Colors.blue,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(0,0, 0, 8),
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 2), // Reduced bottom padding
           child: Row(
-            // Set crossAxisAlignment to center to align icons vertically in the middle.
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              IconButton(
-                color: Colors.white,
-                onPressed: () {
-                  switchScreen('home-screen');
-                },
-                icon: const Icon(Icons.home_filled),
-                tooltip: "My counters",
+              FittedBox( // Wrap with FittedBox
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      color: Colors.white,
+                      onPressed: () {
+                        switchScreen('home-screen');
+                      },
+                      icon: const Icon(Icons.home_filled),
+                      tooltip: "My counters",
+                    ),
+                    Text('Home', style: TextStyle(color: Colors.white, fontSize: 10)), // Reduced font size
+                  ],
+                ),
               ),
-                IconButton(
-                color: Colors.white,
-                onPressed: () {
-                  switchScreen('stats-screen');
-                },
-                icon: const Icon(Icons.analytics),
-                tooltip: "Statistics",
+              FittedBox(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      color: Colors.white,
+                      onPressed: () {
+                        switchScreen('stats-screen');
+                      },
+                      icon: const Icon(Icons.analytics),
+                      tooltip: "Statistics",
+                    ),
+                    Text('Insights', style: TextStyle(color: Colors.white, fontSize: 10)),
+                  ],
+                ),
               ),
-              IconButton(
-                color: Colors.white,
-                onPressed: () {
-                  switchScreen('settings-screen');
-                },
-                icon: const Icon(Icons.settings),
-                tooltip: "Settings",
+              FittedBox(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      color: Colors.white,
+                      onPressed: () {
+                        switchScreen('settings-screen');
+                      },
+                      icon: const Icon(Icons.settings),
+                      tooltip: "Settings",
+                    ),
+                    Text('Settings', style: TextStyle(color: Colors.white, fontSize: 10)),
+                  ],
+                ),
               ),
-              // Add more IconButton widgets as needed
+              // Add more Column widgets with IconButton and Text as needed
             ],
           ),
         ),
@@ -50,4 +73,3 @@ class BottomMenu extends StatelessWidget {
     );
   }
 }
-

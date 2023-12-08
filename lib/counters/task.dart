@@ -168,16 +168,42 @@ class _TaskWidgetState extends State<TaskWidget> with TickerProviderStateMixin {
   }
 
   void _deleteTask(BuildContext context) async {
-    await widget.dataModel.deleteTask(widget.task.id!);
+    // Show a confirmation dialog
+    bool confirm = await showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: Text('Are you sure you want to delete this task?'),
+              actions: <Widget>[
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(context).pop(false), // User presses Cancel
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () =>
+                      Navigator.of(context).pop(true), // User presses Yes
+                  child: Text('Yes'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false; // If the dialog is dismissed, it returns null. Convert it to false.
 
-    // Trigger the callback
-    widget.onTaskDeleted();
+    // If confirm is true, proceed with deletion
+    if (confirm) {
+      await widget.dataModel.deleteTask(widget.task.id!);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("${widget.task.name} deleted"),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+      // Trigger the callback
+      widget.onTaskDeleted();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("${widget.task.name} deleted"),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
   }
 }
