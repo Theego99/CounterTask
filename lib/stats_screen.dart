@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:counter/counters/data_model.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math';
+import 'package:intl/intl.dart';
 
 class StatScreen extends StatefulWidget {
   const StatScreen({Key? key}) : super(key: key);
@@ -72,12 +73,6 @@ class _StatScreenState extends State<StatScreen> {
                 }).toList(),
               ),
             ),
-            if (taskHistories.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: buildLineChart(taskHistories),
-              ),
-
             // Insights
             if (historyData.isNotEmpty)
               Padding(
@@ -86,6 +81,12 @@ class _StatScreenState extends State<StatScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: buildInsights(historyData),
                 ),
+              ),
+            //chart
+            if (taskHistories.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: buildLineChart(taskHistories),
               ),
           ],
         ),
@@ -109,6 +110,9 @@ class _StatScreenState extends State<StatScreen> {
     Map<int, List<FlSpot>> taskSpots = {};
 
     int maxDataPoints = 0;
+    Color getRandomColor() {
+      return Colors.primaries[Random().nextInt(Colors.primaries.length)];
+    }
 
     // Grouping task counts by their task ID
     for (var taskHistory in taskHistories) {
@@ -178,9 +182,7 @@ class _StatScreenState extends State<StatScreen> {
     );
   }
 
-
   List<Widget> buildInsights(List<CounterHistory> historyData) {
-    // Logic to calculate insights
     double percentageReachingMinimum =
         calculatePercentageReachingMinimum(historyData);
     double percentageReachingGoal =
@@ -190,21 +192,117 @@ class _StatScreenState extends State<StatScreen> {
     DateTime resetTimeLowestSum = findResetTimeWithLowestSum(historyData);
     DateTime resetTimeHighestSum = findResetTimeWithHighestSum(historyData);
 
-    return [
-      Text(
-          "Percentage reaching minimum: ${percentageReachingMinimum.toStringAsFixed(2)}%"),
-      Text(
-          "Percentage reaching goal: ${percentageReachingGoal.toStringAsFixed(2)}%"),
-      Text("Task with highest goal percentage: $taskWithHighestGoalPercentage"),
-      Text(
-          "Reset time with lowest sum: ${resetTimeLowestSum.toIso8601String()}"),
-      Text(
-          "Reset time with highest sum: ${resetTimeHighestSum.toIso8601String()}"),
-    ];
-  }
+    TextStyle statsTextStyle = TextStyle(color: Colors.grey[800], fontSize: 14);
+    TextStyle headerTextStyle = TextStyle(
+        color: Colors.deepPurple[900],
+        fontSize: 20,
+        fontWeight: FontWeight.bold);
+    Color cardBackgroundColor = Colors.white;
+    Color progressIndicatorBackgroundColor = Colors.deepPurple[100]!;
+    Color progressIndicatorValueColor = Colors.deepPurple[800]!;
 
-  Color getRandomColor() {
-    return Colors.primaries[Random().nextInt(Colors.primaries.length)];
+    return [
+      Card(
+        color: cardBackgroundColor,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Performance Insights", style: headerTextStyle),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: percentageReachingMinimum / 100,
+                  backgroundColor: progressIndicatorBackgroundColor,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                      progressIndicatorValueColor),
+                  minHeight: 12,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                    "Minimum reached: ${percentageReachingMinimum.toStringAsFixed(2)}%",
+                    style: statsTextStyle),
+              ),
+              const SizedBox(height: 10),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: percentageReachingGoal / 100,
+                  backgroundColor: Colors.teal[100],
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.teal[800]!),
+                  minHeight: 12,
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 8.0),
+                child: Text(
+                    "Goal reached: ${percentageReachingGoal.toStringAsFixed(2)}%",
+                    style: statsTextStyle),
+              ),
+            ],
+          ),
+        ),
+      ),
+      Card(
+        color: cardBackgroundColor,
+        elevation: 4,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text("Key Achievements", style: headerTextStyle),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.star_border, color: Colors.deepPurple[900]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Top Task: $taskWithHighestGoalPercentage",
+                      style: statsTextStyle.copyWith(height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.trending_down, color: Colors.red[400]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Lowest Point: ${DateFormat('yyyy-MM-dd – kk:mm').format(resetTimeLowestSum)}",
+                      style: statsTextStyle.copyWith(height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.trending_up, color: Colors.green[400]),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "Peak Performance: ${DateFormat('yyyy-MM-dd – kk:mm').format(resetTimeHighestSum)}",
+                      style: statsTextStyle.copyWith(height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ];
   }
 }
 
