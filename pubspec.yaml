@@ -8,11 +8,13 @@ environment:
   sdk: '>=3.1.5 <4.0.0'
 
 dependencies:
-  intl: ^0.17.0
+  intl: ^0.18.1
   fl_chart: ^0.40.0
   shared_preferences: ^2.0.12
   flutter_timer_countdown: ^1.0.6
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
   cupertino_icons: ^1.0.2
@@ -28,7 +30,7 @@ dev_dependencies:
   flutter_lints: ^2.0.0
 
 flutter:
-
+  generate: true
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:

@@ -4,6 +4,8 @@ import 'package:counter/counters/data_model.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math';
 import 'package:intl/intl.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 class StatScreen extends StatefulWidget {
   const StatScreen({Key? key}) : super(key: key);
@@ -17,11 +19,14 @@ class _StatScreenState extends State<StatScreen> {
   List<CounterHistory> historyData = [];
   CounterDataModel dataModel = CounterDataModel();
   List<int> counterIds = []; // List of counter IDs for the dropdown
+  List<Counter> counters = [];
 
   @override
   void initState() {
     super.initState();
+    dataModel.initDB();
     _loadCounterIds();
+    _loadCounters();
   }
 
   Future<void> _loadCounterIds() async {
@@ -32,6 +37,14 @@ class _StatScreenState extends State<StatScreen> {
         selectedCounterId = counterIds.first;
         _loadHistoryData();
       }
+    });
+  }
+
+  Future<void> _loadCounters() async {
+    List<Counter> loadedCounters = await dataModel.getCounters();
+    setState(() {
+      // Assuming you have a state variable that holds the list of counters
+      counters = loadedCounters;
     });
   }
 
@@ -46,9 +59,6 @@ class _StatScreenState extends State<StatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Extract task data from historyData
-    List<TaskHistory> taskHistories = _extractTaskHistories();
-
     return Scaffold(
       backgroundColor: Color.fromARGB(255, 77, 31, 201),
       body: SingleChildScrollView(
@@ -57,20 +67,39 @@ class _StatScreenState extends State<StatScreen> {
           children: [
             Padding(
               padding: const EdgeInsets.all(20.0),
-              child: DropdownButton<int>(
-                value: selectedCounterId,
-                onChanged: (newValue) {
-                  setState(() {
-                    selectedCounterId = newValue;
-                    _loadHistoryData();
-                  });
-                },
-                items: counterIds.map<DropdownMenuItem<int>>((int value) {
-                  return DropdownMenuItem<int>(
-                    value: value,
-                    child: Text('Counter $value'),
-                  );
-                }).toList(),
+              child: Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: Colors.blueGrey[300]!, width: 2),
+                  color: Colors.white,
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<int>(
+                    value: selectedCounterId,
+                    icon: Icon(Icons.keyboard_arrow_down,
+                        color: Colors.deepPurple),
+                    onChanged: (newValue) {
+                      setState(() {
+                        selectedCounterId = newValue;
+                        _loadHistoryData();
+                      });
+                    },
+                    items: counterIds.map<DropdownMenuItem<int>>((int value) {
+                      var matchingCounter =
+                          counters.firstWhere((counter) => counter.id == value);
+                      return DropdownMenuItem<int>(
+                        value: value,
+                        child: Text(
+                          matchingCounter.name,
+                          style: TextStyle(color: Colors.deepPurple[800]),
+                        ),
+                      );
+                    }).toList(),
+                    dropdownColor: Colors.white,
+                    style: TextStyle(fontSize: 16, color: Colors.black),
+                  ),
+                ),
               ),
             ),
             // Insights
@@ -82,11 +111,15 @@ class _StatScreenState extends State<StatScreen> {
                   children: buildInsights(historyData),
                 ),
               ),
-            //chart
-            if (taskHistories.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: buildLineChart(taskHistories),
+            if (historyData.isEmpty)
+              Container(
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(vertical: 20.0),
+                child: Text(
+                  AppLocalizations.of(context)!.noDataAvailable,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
               ),
           ],
         ),
@@ -102,84 +135,6 @@ class _StatScreenState extends State<StatScreen> {
       }
     }
     return taskData.entries.map((e) => TaskHistory(e.key, e.value)).toList();
-  }
-
-// Create a Line Chart with dynamic width and horizontal scrolling
-  Widget buildLineChart(List<TaskHistory> taskHistories) {
-    List<LineChartBarData> lines = [];
-    Map<int, List<FlSpot>> taskSpots = {};
-
-    int maxDataPoints = 0;
-    Color getRandomColor() {
-      return Colors.primaries[Random().nextInt(Colors.primaries.length)];
-    }
-
-    // Grouping task counts by their task ID
-    for (var taskHistory in taskHistories) {
-      List<FlSpot> spots = [];
-      for (int i = 0; i < taskHistory.counts.length; i++) {
-        spots.add(FlSpot(i.toDouble(), taskHistory.counts[i]));
-      }
-      maxDataPoints = max(maxDataPoints, spots.length);
-      taskSpots[taskHistory.taskId] = spots;
-    }
-
-    // Creating a line for each task
-    taskSpots.forEach((taskId, spots) {
-      lines.add(LineChartBarData(
-        spots: spots,
-        isCurved: true,
-        colors: [getRandomColor()],
-        barWidth: 2,
-        isStrokeCapRound: true,
-        dotData: FlDotData(show: true),
-        belowBarData: BarAreaData(show: false),
-      ));
-    });
-
-    // Calculate the chart width
-    // Calculate chart width
-    double minWidthPerPoint = 50; // Minimum width per data point
-    double chartWidth = max(
-        MediaQuery.of(context).size.width, minWidthPerPoint * maxDataPoints);
-
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: SizedBox(
-        height: 200,
-        width: chartWidth,
-        child: LineChart(
-          LineChartData(
-            lineBarsData: lines,
-            gridData: FlGridData(show: true), // Enable Grid
-            titlesData: FlTitlesData(
-              bottomTitles: SideTitles(
-                showTitles: true,
-                getTextStyles: (context, value) =>
-                    const TextStyle(color: Colors.white, fontSize: 12),
-                getTitles: (value) {
-                  // Logic to return task names based on index
-                  int index = value.toInt();
-                  if (index < historyData.length) {
-                    return index.toString();
-                  }
-                  return '';
-                },
-              ),
-              leftTitles: SideTitles(
-                showTitles: true,
-                getTextStyles: (context, value) =>
-                    const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ),
-            borderData: FlBorderData(
-              show: true,
-              border: Border.all(color: Colors.white, width: 2),
-            ),
-          ),
-        ),
-      ),
-    );
   }
 
   List<Widget> buildInsights(List<CounterHistory> historyData) {
@@ -201,6 +156,93 @@ class _StatScreenState extends State<StatScreen> {
     Color progressIndicatorBackgroundColor = Colors.deepPurple[100]!;
     Color progressIndicatorValueColor = Colors.deepPurple[800]!;
 
+    // Task-Specific Stats Cards
+    List<Widget> taskSpecificCards() {
+      // Gather unique task IDs for the selected counter
+      Set<int> uniqueTaskIds = historyData
+          .where((history) => history.counterId == selectedCounterId)
+          .expand((history) => history.tasksHistory.map((task) => task.taskId))
+          .toSet();
+
+      // Use FutureBuilder to fetch and display names for all unique tasks
+      return [
+        FutureBuilder<List<Task>>(
+          future: dataModel.getTasksForCounter(selectedCounterId as int),
+          builder: (BuildContext context, AsyncSnapshot<List<Task>> snapshot) {
+            if (snapshot.connectionState == ConnectionState.done) {
+              if (snapshot.hasData) {
+                // Filter tasks to include only those with unique IDs
+                var tasksToDisplay = snapshot.data!
+                    .where((task) => uniqueTaskIds.contains(task.id))
+                    .toList();
+
+                return Card(
+                  color: cardBackgroundColor,
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: tasksToDisplay.map((task) {
+                        Map<String, double> dataMap = {
+                          AppLocalizations.of(context)!.notReachedMinimum:
+                              calculateNotReachedMinimum(historyData, task.id),
+                          AppLocalizations.of(context)!.reachedMinimum:
+                              calculateReachedMinimum(historyData, task.id),
+                          AppLocalizations.of(context)!.reachedGoal:
+                              calculateReachedGoal(historyData, task.id),
+                        };
+
+                        double averageCount =
+                            calculateAverageCount(historyData, task.id);
+
+                        return Padding(
+                            padding: const EdgeInsets.only(bottom: 8.0),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(" ${task.name}", style: headerTextStyle),
+                                SizedBox(height: 8),
+                                PieChartWithData(context, dataMap),
+                                SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Icon(Icons.timeline,
+                                        color: Colors.deepPurple[900]),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      AppLocalizations.of(context)!.allTimeAverage + "" + averageCount.toString(),
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: Colors.black,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ));
+                      }).toList(),
+                    ),
+                  ),
+                );
+              } else {
+                return Card(
+                  child:
+                      Text(AppLocalizations.of(context)!.error + snapshot.error.toString(), style: headerTextStyle),
+                );
+              }
+            }
+            return Card(
+              child: Text(AppLocalizations.of(context)!.loading, style: headerTextStyle),
+            );
+          },
+        ),
+      ];
+    }
+
     return [
       Card(
         color: cardBackgroundColor,
@@ -211,7 +253,7 @@ class _StatScreenState extends State<StatScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Performance Insights", style: headerTextStyle),
+              Text(AppLocalizations.of(context)!.performance, style: headerTextStyle),
               const SizedBox(height: 10),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),
@@ -226,7 +268,7 @@ class _StatScreenState extends State<StatScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
-                    "Minimum reached: ${percentageReachingMinimum.toStringAsFixed(2)}%",
+                    AppLocalizations.of(context)!.minimumReached + percentageReachingMinimum.toStringAsFixed(2) + "%",
                     style: statsTextStyle),
               ),
               const SizedBox(height: 10),
@@ -242,7 +284,7 @@ class _StatScreenState extends State<StatScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 8.0),
                 child: Text(
-                    "Goal reached: ${percentageReachingGoal.toStringAsFixed(2)}%",
+                     AppLocalizations.of(context)!.reachedGoal + percentageReachingGoal.toStringAsFixed(2) + "%",
                     style: statsTextStyle),
               ),
             ],
@@ -258,7 +300,7 @@ class _StatScreenState extends State<StatScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Key Achievements", style: headerTextStyle),
+              Text(AppLocalizations.of(context)!.keyInsights, style: headerTextStyle),
               const SizedBox(height: 16),
               Row(
                 children: [
@@ -266,7 +308,7 @@ class _StatScreenState extends State<StatScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      "Top Task: $taskWithHighestGoalPercentage",
+                      AppLocalizations.of(context)!.topTask + ":" + taskWithHighestGoalPercentage.toString(),
                       style: statsTextStyle.copyWith(height: 1.4),
                     ),
                   ),
@@ -279,7 +321,7 @@ class _StatScreenState extends State<StatScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      "Lowest Point: ${DateFormat('yyyy-MM-dd – kk:mm').format(resetTimeLowestSum)}",
+                      AppLocalizations.of(context)!.lowestPerformance + {DateFormat('yyyy-MM-dd – kk:mm').format(resetTimeLowestSum)}.toString(),
                       style: statsTextStyle.copyWith(height: 1.4),
                     ),
                   ),
@@ -292,7 +334,7 @@ class _StatScreenState extends State<StatScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      "Peak Performance: ${DateFormat('yyyy-MM-dd – kk:mm').format(resetTimeHighestSum)}",
+                      AppLocalizations.of(context)!.peakPerformance + {DateFormat('yyyy-MM-dd – kk:mm').format(resetTimeHighestSum)}.toString(),
                       style: statsTextStyle.copyWith(height: 1.4),
                     ),
                   ),
@@ -302,8 +344,163 @@ class _StatScreenState extends State<StatScreen> {
           ),
         ),
       ),
+      Padding(
+        padding: const EdgeInsets.only(top: 24.0, left: 10),
+        child: Container(
+          width: 250.0, // Set a specific width
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(15.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withOpacity(0.5),
+                spreadRadius: 1,
+                blurRadius: 5,
+                offset: Offset(0, 3),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildLegendItem(AppLocalizations.of(context)!.notReachedMinimum, Colors.orange),
+                SizedBox(height: 8),
+                _buildLegendItem(AppLocalizations.of(context)!.reachedMinimum, Colors.yellow),
+                SizedBox(height: 8),
+                _buildLegendItem(AppLocalizations.of(context)!.reachedGoal, Colors.green),
+              ],
+            ),
+          ),
+        ),
+      ),
+      ...taskSpecificCards(),
     ];
   }
+}
+
+double calculateAverageCount(List<CounterHistory> historyData, int? taskid) {
+  int totalOccurrences = 0;
+  int sum = 0;
+
+  for (var history in historyData) {
+    for (var task in history.tasksHistory) {
+      if (task.taskId == taskid) {
+        totalOccurrences++;
+        sum += task.count;
+      }
+    }
+  }
+
+  if (totalOccurrences == 0) return 0;
+
+  double average = sum / totalOccurrences;
+  return double.parse(average.toStringAsFixed(1));
+}
+
+double calculateNotReachedMinimum(
+    List<CounterHistory> historyData, int? taskid) {
+  int totalOccurrences = 0;
+  int occurrencesNotReachedMinimum = 0;
+
+  for (var history in historyData) {
+    for (var task in history.tasksHistory) {
+      if (task.taskId == taskid) {
+        totalOccurrences++;
+        if (task.count < task.minimum) {
+          occurrencesNotReachedMinimum++;
+        }
+      }
+    }
+  }
+
+  return (totalOccurrences == 0)
+      ? 0
+      : (occurrencesNotReachedMinimum / totalOccurrences) * 100;
+}
+
+double calculateReachedMinimum(List<CounterHistory> historyData, int? taskid) {
+  int totalOccurrences = 0;
+  int occurrencesReachedMinimum = 0;
+
+  for (var history in historyData) {
+    for (var task in history.tasksHistory) {
+      if (task.taskId == taskid) {
+        totalOccurrences++;
+        if (task.count >= task.minimum) {
+          occurrencesReachedMinimum++;
+        }
+      }
+    }
+  }
+
+  return (totalOccurrences == 0)
+      ? 0
+      : (occurrencesReachedMinimum / totalOccurrences) * 100;
+}
+
+double calculateReachedGoal(List<CounterHistory> historyData, int? taskid) {
+  int totalOccurrences = 0;
+  int occurrencesReachedGoal = 0;
+
+  for (var history in historyData) {
+    for (var task in history.tasksHistory) {
+      if (task.taskId == taskid) {
+        totalOccurrences++;
+        if (task.count >= task.goal) {
+          occurrencesReachedGoal++;
+        }
+      }
+    }
+  }
+
+  return (totalOccurrences == 0)
+      ? 0
+      : (occurrencesReachedGoal / totalOccurrences) * 100;
+}
+
+Container PieChartWithData(BuildContext context ,Map<String, double> dataMap) {
+  List<PieChartSectionData> sections = dataMap.entries.map((entry) {
+    return PieChartSectionData(
+      color: entry.key == AppLocalizations.of(context)!.notReachedMinimum
+          ? Colors.orange
+          : entry.key == AppLocalizations.of(context)!.reachedMinimum
+              ? Colors.yellow
+              : Colors.green,
+      value: entry.value,
+      title: '',
+      radius: 50.0,
+    );
+  }).toList();
+
+  return Container(
+    height: 200.0, // Fixed height for the pie chart
+    child: PieChart(
+      PieChartData(
+        sections: sections,
+        centerSpaceRadius: 40,
+      ),
+    ),
+  );
+}
+
+Widget _buildLegendItem(String label, Color color) {
+  return Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Container(
+        width: 16.0,
+        height: 16.0,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+        ),
+      ),
+      SizedBox(width: 8.0),
+      Text(label),
+    ],
+  );
 }
 
 double calculatePercentageReachingMinimum(List<CounterHistory> historyData) {
@@ -391,8 +588,6 @@ class TaskHistory {
   TaskHistory(this.taskId, this.counts);
 
   static TaskHistory fromMap(Map<String, dynamic> map) {
-    // Assuming map['tasks_history'] is a list of task data
-    // Here you need to extract the counts for each task from the map
     List<double> counts = [];
     for (var taskMap in map['tasks_history']) {
       counts.add(taskMap['count'].toDouble());
@@ -403,3 +598,6 @@ class TaskHistory {
     );
   }
 }
+
+
+

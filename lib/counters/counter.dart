@@ -5,6 +5,8 @@ import 'package:counter/counters/data_model.dart';
 import 'package:counter/counters/task.dart';
 import 'package:counter/counters/countdown.dart';
 import 'package:counter/counters/drop_down_menu.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 
 class CounterWidget extends StatefulWidget {
   final Counter counter;
@@ -100,7 +102,7 @@ class _CounterWidgetState extends State<CounterWidget>
                     color: Colors.white,
                     onPressed:
                         _showEditCounterDialog, // Updated to call the edit dialog
-                    tooltip: "Edit Counter",
+                    tooltip: AppLocalizations.of(context)!.editCounter,
                   ),
                 ),
                 Container(
@@ -118,7 +120,7 @@ class _CounterWidgetState extends State<CounterWidget>
                       // delete task
                       _deleteCounter(context);
                     },
-                    tooltip: "Delete Counter",
+                    tooltip: AppLocalizations.of(context)!.deleteCounter,
                   ),
                 ),
                 SizedBox(
@@ -167,7 +169,7 @@ class _CounterWidgetState extends State<CounterWidget>
                                 onPressed: () {
                                   _showAddTaskDialog(context);
                                 },
-                                tooltip: 'Create New Task',
+                                tooltip: AppLocalizations.of(context)!.createNewTask,
                               ),
                             ],
                           ),
@@ -193,51 +195,34 @@ class _CounterWidgetState extends State<CounterWidget>
                     ),
                   ),
                   if (isExpanded)
-                    ReorderableListView(
-                      proxyDecorator: customProxyDecorator,
-                      buildDefaultDragHandles: false,
+                    ListView.builder(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
-                      children: <Widget>[
-                        for (final task in tasks)
-                          ReorderableDragStartListener(
-                            index: tasks.indexOf(task),
-                            key: Key(task.name +
-                                task.id.toString()), // Use a unique key
-                            child: Container(
-                              decoration: BoxDecoration(
-                                border: Border.all(
-                                  color: Color.fromARGB(255, 77, 31, 201),
-                                  width: 2,
-                                ),
-                              ),
-                              child: TaskWidget(
-                                task,
-                                widget.dataModel,
-                                onIncrement: () {
-                                  setState(() {
-                                    // Increment the task count
-                                    widget.dataModel.updateTask(task);
-                                  });
-                                },
-                                onTaskDeleted: () {
-                                  setState(() {
-                                    _loadTasks();
-                                  });
-                                },
-                              ),
+                      itemCount: tasks.length,
+                      itemBuilder: (context, index) {
+                        final task = tasks[index];
+                        return Container(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: Color.fromARGB(255, 77, 31, 201),
+                              width: 2,
                             ),
                           ),
-                      ],
-                      onReorder: (int oldIndex, int newIndex) {
-                        setState(
-                          () {
-                            if (oldIndex < newIndex) {
-                              newIndex -= 1;
-                            }
-                            final Task item = tasks.removeAt(oldIndex);
-                            tasks.insert(newIndex, item);
-                          },
+                          child: TaskWidget(
+                            task,
+                            widget.dataModel,
+                            onIncrement: () {
+                              setState(() {
+                                // Increment the task count
+                                widget.dataModel.updateTask(task);
+                              });
+                            },
+                            onTaskDeleted: () {
+                              setState(() {
+                                _loadTasks();
+                              });
+                            },
+                          ),
                         );
                       },
                     ),
@@ -269,17 +254,17 @@ class _CounterWidgetState extends State<CounterWidget>
           context: context,
           builder: (BuildContext context) {
             return AlertDialog(
-              title: Text('Are you sure you want to delete counter?'),
+              title: Text(AppLocalizations.of(context)!.deleteCounterConfirmation),
               actions: <Widget>[
                 TextButton(
                   onPressed: () =>
                       Navigator.of(context).pop(false), // User presses Cancel
-                  child: Text('Cancel'),
+                  child: Text(AppLocalizations.of(context)!.cancel),
                 ),
                 TextButton(
                   onPressed: () =>
                       Navigator.of(context).pop(true), // User presses Yes
-                  child: Text('Yes'),
+                  child: Text(AppLocalizations.of(context)!.yes),
                 ),
               ],
             );
@@ -293,7 +278,7 @@ class _CounterWidgetState extends State<CounterWidget>
       widget.onDelete(); // This will call removeCounter from MyCounters
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("${widget.counter.name} deleted"),
+          content: Text(AppLocalizations.of(context)!.counterDeleted + widget.counter.name),
           duration: const Duration(seconds: 2),
         ),
       );
@@ -321,7 +306,7 @@ class _CounterWidgetState extends State<CounterWidget>
           // Use StatefulBuilder to manage state inside the dialog
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('Edit Counter'),
+              title: Text(AppLocalizations.of(context)!.editCounter),
               content: SingleChildScrollView(
                 // Use SingleChildScrollView for better handling of small screens
                 child: Column(
@@ -329,7 +314,7 @@ class _CounterWidgetState extends State<CounterWidget>
                   children: [
                     TextField(
                       decoration:
-                          const InputDecoration(labelText: 'Counter Name'),
+                          InputDecoration(labelText: AppLocalizations.of(context)!.counterName),
                       controller:
                           TextEditingController(text: widget.counter.name),
                       onChanged: (value) {
@@ -338,7 +323,7 @@ class _CounterWidgetState extends State<CounterWidget>
                     ),
                     const SizedBox(height: 20),
                     DropdownMenuWidget(
-                      label: 'Days',
+                      label: AppLocalizations.of(context)!.days,
                       initialValue: selectedDays,
                       onSelected: (value) {
                         setState(() {
@@ -350,7 +335,7 @@ class _CounterWidgetState extends State<CounterWidget>
                     ),
                     const SizedBox(height: 20),
                     DropdownMenuWidget(
-                      label: 'Hours',
+                      label: AppLocalizations.of(context)!.hours,
                       initialValue: selectedHours,
                       onSelected: (value) {
                         setState(() {
@@ -362,7 +347,7 @@ class _CounterWidgetState extends State<CounterWidget>
                     ),
                     const SizedBox(height: 20),
                     DropdownMenuWidget(
-                      label: 'Minutes',
+                      label: AppLocalizations.of(context)!.minutes,
                       initialValue: selectedMinutes,
                       onSelected: (value) {
                         setState(() {
@@ -374,7 +359,7 @@ class _CounterWidgetState extends State<CounterWidget>
                     ),
                     const SizedBox(height: 20),
                     DropdownMenuWidget(
-                      label: 'Seconds',
+                      label: AppLocalizations.of(context)!.seconds,
                       initialValue: selectedSeconds,
                       onSelected: (value) {
                         setState(() {
@@ -389,13 +374,13 @@ class _CounterWidgetState extends State<CounterWidget>
               ),
               actions: <Widget>[
                 TextButton(
-                  child: const Text('Cancel'),
+                  child: Text(AppLocalizations.of(context)!.cancel),
                   onPressed: () {
                     Navigator.of(context).pop();
                   },
                 ),
                 TextButton(
-                  child: const Text('Save'),
+                  child: Text(AppLocalizations.of(context)!.save),
                   onPressed: () {
                     // Reassemble the Duration from the selected values
                     Duration updatedResetTimePeriod = Duration(
@@ -445,19 +430,19 @@ class _CounterWidgetState extends State<CounterWidget>
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Add Task'),
+          title: Text(AppLocalizations.of(context)!.addTask),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextFormField(
                 controller: taskNameController,
-                decoration: const InputDecoration(labelText: 'Task Name'),
+                decoration: InputDecoration(labelText: AppLocalizations.of(context)!.taskName),
                 onChanged: (value) {
                   // No need to set state here as the controller handles it
                 },
                 validator: (value) {
                   if (value != null && value.length > 10) {
-                    return 'Name cannot exceed 10 characters';
+                    return AppLocalizations.of(context)!.nameCannotExceed;
                   }
                   return null;
                 },
@@ -465,7 +450,7 @@ class _CounterWidgetState extends State<CounterWidget>
               ),
               TextField(
                 decoration: InputDecoration(
-                  labelText: 'Minimum',
+                  labelText: AppLocalizations.of(context)!.minimum,
                   errorText: minimumErrorText,
                 ),
                 keyboardType: TextInputType.number,
@@ -475,7 +460,7 @@ class _CounterWidgetState extends State<CounterWidget>
                     minimum = parsedValue;
                     minimumErrorText = null;
                   } else {
-                    minimumErrorText = 'Only numbers are accepted';
+                    minimumErrorText = AppLocalizations.of(context)!.onlyNumbersAccepted;
                   }
                 },
               ),
@@ -491,7 +476,7 @@ class _CounterWidgetState extends State<CounterWidget>
                     goal = parsedValue;
                     goalErrorText = null;
                   } else {
-                    goalErrorText = 'Only numbers are accepted';
+                    goalErrorText = AppLocalizations.of(context)!.onlyNumbersAccepted;
                   }
                 },
               ),
@@ -499,13 +484,13 @@ class _CounterWidgetState extends State<CounterWidget>
           ),
           actions: <Widget>[
             TextButton(
-              child: const Text('Cancel'),
+              child: Text(AppLocalizations.of(context)!.cancel),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: const Text('Add'),
+              child: Text(AppLocalizations.of(context)!.add),
               onPressed: () {
                 if (taskNameController.text.isNotEmpty &&
                     minimum != null &&
@@ -520,9 +505,9 @@ class _CounterWidgetState extends State<CounterWidget>
                 } else {
                   // Show an error message if conditions are not met
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
+                    SnackBar(
                       content: Text(
-                          'Please enter a valid task name (up to 10 characters) and numbers for Minimum and Goal.'),
+                          AppLocalizations.of(context)!.validTaskName),
                       duration: Duration(seconds: 2),
                     ),
                   );

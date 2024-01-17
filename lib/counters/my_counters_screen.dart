@@ -8,9 +8,10 @@ import 'package:counter/counters/proxy_decorator.dart';
 class MyCounters extends StatefulWidget {
   final CounterDataModel dataModel;
 
-  const MyCounters(
-      {Key? key, required this.dataModel,})
-      : super(key: key);
+  const MyCounters({
+    Key? key,
+    required this.dataModel,
+  }) : super(key: key);
 
   @override
   State<MyCounters> createState() => _MyCountersState();
@@ -35,7 +36,7 @@ class _MyCountersState extends State<MyCounters> {
 
   void refreshCounters() async {
     List<Counter> updatedCounters = await widget.dataModel.getCounters();
-    
+
     setState(() {
       counters = updatedCounters;
     });
@@ -100,65 +101,49 @@ class _MyCountersState extends State<MyCounters> {
       );
     } else {
       return Center(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(30),
-                child: Column(
-                  children: [
-                    IconButton(
-                      onPressed: () {
-                        _showAddCounterDialog(context);
-                      },
-                      icon: const Icon(Icons.add_box),
-                      iconSize: 40,
-                      color: Colors.white,
-                      tooltip: 'Create New Counter',
-                    ),
-                    ReorderableListView(
-                      // clipBehavior: Clip.hardEdge,
-                      proxyDecorator: customProxyDecorator,
-                      buildDefaultDragHandles: false,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      children: <Widget>[
-                        for (final counter in counters)
-                          ReorderableDragStartListener(
-                            index: counters.indexOf(counter),
-                            key: Key(counter.createdAt
-                                .toIso8601String()), // Use a unique key
-                            child: CounterWidget(
-                              counter,
-                              widget.dataModel,
-                              removeCounter,
-                              refreshCounters, // Passing the callback
-                            ),
-                          ),
-                      ],
-                      onReorder: (int oldIndex, int newIndex) {
-                        setState(
-                          () {
-                            if (oldIndex < newIndex) {
-                              newIndex -= 1;
-                            }
-                            final Counter item = counters.removeAt(oldIndex);
-                            counters.insert(newIndex, item);
-                          },
-                        );
-                      },
-                    ),
-                    //this box is just so that the scrollview works without the topbar being in the middle of the screen :((
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.86,
-                    )
-                  ],
-                ),
-              ),
-            ],
-          ),
+        child: Scaffold(
+  body: Container(
+    color: Color.fromARGB(255, 77, 31, 201),
+    child: Center( // Centering the content
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.9, // 80% of screen width
         ),
+        child: ListView.builder(
+          itemCount: counters.length + 2, // Adding 2 for the button and extra space
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              // IconButton as the first item
+              return Padding(
+                padding: const EdgeInsets.all(30),
+                child: IconButton(
+                  onPressed: () {
+                    _showAddCounterDialog(context);
+                  },
+                  icon: const Icon(Icons.add_box),
+                  iconSize: 40,
+                  color: Colors.white,
+                  tooltip: 'Create New Counter',
+                ),
+              );
+            } else if (index == counters.length + 1) {
+              // SizedBox as the last item for extra space
+              return SizedBox(height: MediaQuery.of(context).size.height * 0.1);
+            }
+            final counter = counters[index - 1];
+            return CounterWidget(
+              counter,
+              widget.dataModel,
+              removeCounter,
+              refreshCounters,
+            );
+          },
+        ),
+      ),
+    ),
+  ),
+)
+
       );
     }
   }
